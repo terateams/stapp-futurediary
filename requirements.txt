@@ -1,0 +1,5 @@
+pyjwt
+python-dotenv
+streamlit
+streamlit-ace
+requests
