@@ -22,11 +22,12 @@ page_state.initn_attr("last_diary_datetime", "")
 
 future_diary_history_dir = get_global_datadir("future_diary_history")
 
+
 def parse_diary_datetime(diary_datetime: str):
     if not diary_datetime:
         return datetime.now()
     return datetime.strptime(diary_datetime, "%Y-%m-%d %H:%M:%S")
-    
+
 
 def get_diary_list():
     files = os.listdir(future_diary_history_dir)
@@ -50,6 +51,7 @@ def _load_diary_data(plan_data: dict):
     page_state.last_diary_data = plan_data["last_diary_data"]
     page_state.last_diary_datetime = plan_data["last_diary_datetime"]
 
+
 def sync_diary_data(last_datetime: datetime = None):
     if not page_state.topic.strip():
         st.warning("请先输入主题")
@@ -61,27 +63,30 @@ def sync_diary_data(last_datetime: datetime = None):
         "topic": page_state.topic,
         "diary_data": page_state.diary_data,
         "last_diary_data": page_state.last_diary_data,
-        "last_diary_datetime": last_datetime.strftime("%Y-%m-%d %H:%M:%S") if last_datetime else None,
+        "last_diary_datetime": (
+            last_datetime.strftime("%Y-%m-%d %H:%M:%S") if last_datetime else None
+        ),
     }
-    
+
     page_state.last_diary_datetime = plan_data["last_diary_datetime"]
-    
+
     filepath = os.path.join(
         future_diary_history_dir, f"{page_state.topic}_future_diary.json"
     )
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(plan_data, f, ensure_ascii=False, indent=4)
 
+
 def main():
     with st.sidebar:
-        tab1, tab2 = st.tabs(["参数设置",  "关于"])
+        tab1, tab2 = st.tabs(["参数设置", "关于"])
         apikey_box = st.empty()
         with tab1:
             if not page_state.app_uid:
                 apikey = st.query_params.get("apikey")
                 if not apikey:
                     apikey = apikey_box.text_input("请输入 API Key", type="password")
-                    
+
                 if apikey:
                     appuid = check_apptoken_from_apikey(apikey)
                     if appuid:
@@ -95,8 +100,14 @@ def main():
             param_box = st.container()
 
         with tab2:
-            # st.image("assets/streamlit/teamsgpt.png", use_column_width=True)
-            st.caption("未来日记是一个基于想象力的日记生成系统。")
+            st.image(
+                os.path.join(os.path.dirname(__file__), "future_diary.png"),
+                use_column_width=True,
+            )
+            st.caption(
+                "未来日记是一个革命性的基于想象力的日记生成系统，旨在将用户的未来梦想、目标或情景变成生动的故事。"
+                "这个系统不仅仅是一个简单的日记工具，它是一个让用户探索未来可能性的平台，让你通过文字绘制心中的蓝图。"
+            )
 
     with param_box:
         options = ["..."]
@@ -106,7 +117,7 @@ def main():
         history = st.selectbox("历史记录", options, index=0)
         if history != "...":
             load_diary_data_by_topic(history)
-            page_state.topic  = history
+            page_state.topic = history
 
         page_state.topic = st.text_input("Topic", page_state.topic)
         completed = st.text_area("Completed conditions", "")
@@ -119,7 +130,6 @@ def main():
         gen_button = st.button("生成内容")
 
     tab_gen, tab_articles, tab_editor = st.tabs(["写作", "预览", "编辑"])
-
 
     with tab_gen:
         tmp_box = st.empty()
@@ -158,20 +168,24 @@ def main():
     ---
 
     < the contents of the diary, be careful not to output the date, and directly output the full content paragraphs...>"""
-            _prompt = f'''
+            _prompt = f"""
     Journal Topic: {page_state.topic}
     Completed Conditions: {completed}
     Goal Prompts: {goal_tips}
     Datime Range: {start_time} - {end_time}
-    '''
+    """
             with st.spinner("思考中..."):
-                stream = openai_text_generate(_sysmsg, _prompt, apikey=page_state.apikey)
-                page_state.last_diary_data = write_stream_text(tmp_box,stream)
-                
+                stream = openai_text_generate(
+                    _sysmsg, _prompt, apikey=page_state.apikey
+                )
+                page_state.last_diary_data = write_stream_text(tmp_box, stream)
 
         if page_state.last_diary_data:
             tmp_box.markdown(page_state.last_diary_data)
-            if st.button("Save") and page_state.last_diary_data not in page_state.diary_data:
+            if (
+                st.button("Save")
+                and page_state.last_diary_data not in page_state.diary_data
+            ):
                 page_state.diary_data += "\n\n" + page_state.last_diary_data
                 sync_diary_data(end_time)
             else:
@@ -185,17 +199,16 @@ def main():
         else:
             st.warning("还没有内容")
 
-
-
     with tab_editor:
         if page_state.diary_data:
             diary_data_content = st_ace(
-                page_state.diary_data, language="markdown", height=480, wrap=True,
+                page_state.diary_data,
+                language="markdown",
+                height=480,
+                wrap=True,
             )
             if diary_data_content:
                 page_state.diary_data = diary_data_content
                 sync_diary_data(page_state.last_diary_datetime)
         else:
             st.warning("还没有内容")
-
-
