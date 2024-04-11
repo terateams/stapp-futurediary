@@ -10,8 +10,6 @@ from datetime import datetime, timedelta
 
 load_dotenv()
 
-st.set_page_config(page_title="未来日记", page_icon="📅")
-
 page_state = PageSessionState("future_diary")
 page_state.initn_attr("topic", "")
 page_state.initn_attr("diary_data", "")
@@ -76,6 +74,7 @@ def sync_diary_data(last_datetime: datetime = None):
 
 
 def main():
+    st.set_page_config(page_title="未来日记", page_icon="📅")
     with st.sidebar:
         st.title("📅 未来日记")
         tab1, tab2 = st.tabs(["参数设置", "关于"])
